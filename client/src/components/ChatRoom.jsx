@@ -12,6 +12,7 @@ const ChatRoom = ({ room }) => {
 
   useEffect(() => {
     if (!room) return;
+    setTypingUser(null);
     const socket = getSocket();
 
     const loadHistory = async () => {

@@ -1,20 +1,44 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getSocket } from "../services/socket";
 
 const MessageInput = ({ roomId }) => {
   const [text, setText] = useState("");
+  const typingTimeoutRef = useRef(null);
+
+  const clearTypingTimeout = () => {
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
+  };
 
   const handleChange = (e) => {
     setText(e.target.value);
-    getSocket()?.emit("typing", roomId);
+    const socket = getSocket();
+    socket?.emit("typing", roomId);
+
+    clearTypingTimeout();
+    typingTimeoutRef.current = setTimeout(() => {
+      socket?.emit("stop_typing", roomId);
+      typingTimeoutRef.current = null;
+    }, 1000);
   };
 
   const sendMessage = () => {
     if (!text.trim()) return;
-    getSocket()?.emit("send_message", { roomId, content: text.trim() });
-    getSocket()?.emit("stop_typing", roomId);
+    const socket = getSocket();
+    socket?.emit("send_message", { roomId, content: text.trim() });
+    socket?.emit("stop_typing", roomId);
+    clearTypingTimeout();
     setText("");
   };
+
+  useEffect(() => {
+    return () => {
+      clearTypingTimeout();
+      getSocket()?.emit("stop_typing", roomId);
+    };
+  }, [roomId]);
 
   return (
     <div className="flex gap-2 p-3 border-t">
