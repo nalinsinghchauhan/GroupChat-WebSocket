@@ -18,18 +18,38 @@ const authenticateSocket = (socket, next) => {
 const registerSocketHandlers = (io) => {
   io.use(authenticateSocket);
 
+  const emitSystemMessage = async (roomId, content) => {
+    const message = await Message.create({
+      roomId,
+      messageType: "system",
+      content,
+    });
+
+    io.to(roomId).emit("receive_message", {
+      _id: message._id,
+      roomId,
+      messageType: message.messageType,
+      content: message.content,
+      createdAt: message.createdAt,
+    });
+  };
+
   io.on("connection", (socket) => {
     console.log(`Socket connected: ${socket.user.username}`);
 
-    socket.on("join_room", (roomId) => {
+    socket.on("join_room", async (roomId) => {
       socket.join(roomId);
       socket.currentRoom = roomId;
+      await emitSystemMessage(roomId, `${socket.user.username} joined chat`);
       socket.to(roomId).emit("user_joined", { username: socket.user.username });
     });
 
     socket.on("leave_room", (roomId) => {
+      io.to(roomId).emit("user_left", { username: socket.user.username });
       socket.leave(roomId);
-      socket.to(roomId).emit("user_left", { username: socket.user.username });
+      if (socket.currentRoom === roomId) {
+        socket.currentRoom = null;
+      }
     });
 
     socket.on("send_message", async ({ roomId, content }) => {
@@ -65,7 +85,7 @@ const registerSocketHandlers = (io) => {
 
     socket.on("disconnect", () => {
       if (socket.currentRoom) {
-        socket.to(socket.currentRoom).emit("user_left", { username: socket.user.username });
+        io.to(socket.currentRoom).emit("user_left", { username: socket.user.username });
       }
       console.log(`Socket disconnected: ${socket.user.username}`);
     });

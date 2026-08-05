@@ -2,20 +2,24 @@ const Room = require("../models/Room");
 const Message = require("../models/Message");
 
 exports.listRooms = async (req, res) => {
-  const rooms = await Room.find({ isPrivate: false }).select("name createdBy createdAt");
+  const rooms = await Room.find({ isPrivate: false }).select("name description createdBy createdAt");
   res.json(rooms);
 };
 
 exports.createRoom = async (req, res) => {
   try {
-    const { name } = req.body;
+    const { name, description = "" } = req.body;
     if (!name) return res.status(400).json({ message: "Room name is required" });
 
-    const existing = await Room.findOne({ name });
+    const trimmedName = name.trim();
+    const trimmedDescription = description.trim();
+
+    const existing = await Room.findOne({ name: trimmedName });
     if (existing) return res.status(409).json({ message: "Room already exists" });
 
     const room = await Room.create({
-      name,
+      name: trimmedName,
+      description: trimmedDescription,
       createdBy: req.user.id,
       members: [req.user.id],
     });
