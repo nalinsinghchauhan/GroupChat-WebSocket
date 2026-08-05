@@ -7,6 +7,7 @@ import { useAuth } from "../context/AuthContext";
 
 const Chat = () => {
   const [selectedRoom, setSelectedRoom] = useState(null);
+  const [pendingLeaveRoomId, setPendingLeaveRoomId] = useState(null);
   const { logout, user } = useAuth();
   const navigate = useNavigate();
 
@@ -18,6 +19,11 @@ const Chat = () => {
   const handleLogout = () => {
     logout();
     navigate("/login");
+  };
+
+  const handleSelectRoom = (room) => {
+    setPendingLeaveRoomId(selectedRoom?._id ?? null);
+    setSelectedRoom(room);
   };
 
   return (
@@ -35,8 +41,12 @@ const Chat = () => {
         </button>
       </div>
       <div className="flex flex-1 overflow-hidden">
-        <RoomList onSelectRoom={setSelectedRoom} />
-        <ChatRoom room={selectedRoom} />
+        <RoomList onSelectRoom={handleSelectRoom} />
+        <ChatRoom
+          room={selectedRoom}
+          pendingLeaveRoomId={pendingLeaveRoomId}
+          onClearPendingLeaveRoom={() => setPendingLeaveRoomId(null)}
+        />
       </div>
     </div>
   );

@@ -40,11 +40,15 @@ const registerSocketHandlers = (io) => {
     socket.on("join_room", async (roomId) => {
       socket.join(roomId);
       socket.currentRoom = roomId;
+    });
+
+    socket.on("announce_join", async (roomId) => {
       await emitSystemMessage(roomId, `${socket.user.username} joined chat`);
       socket.to(roomId).emit("user_joined", { username: socket.user.username });
     });
 
-    socket.on("leave_room", (roomId) => {
+    socket.on("leave_room", async (roomId) => {
+      await emitSystemMessage(roomId, `${socket.user.username} left chat`);
       io.to(roomId).emit("user_left", { username: socket.user.username });
       socket.leave(roomId);
       if (socket.currentRoom === roomId) {
@@ -85,6 +89,7 @@ const registerSocketHandlers = (io) => {
 
     socket.on("disconnect", () => {
       if (socket.currentRoom) {
+        emitSystemMessage(socket.currentRoom, `${socket.user.username} left chat`).catch(() => {});
         io.to(socket.currentRoom).emit("user_left", { username: socket.user.username });
       }
       console.log(`Socket disconnected: ${socket.user.username}`);

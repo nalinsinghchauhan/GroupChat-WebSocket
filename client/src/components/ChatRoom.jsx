@@ -5,7 +5,7 @@ import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
 import { useAuth } from "../context/AuthContext";
 
-const ChatRoom = ({ room }) => {
+const ChatRoom = ({ room, pendingLeaveRoomId, onClearPendingLeaveRoom }) => {
   const [messages, setMessages] = useState([]);
   const [typingUser, setTypingUser] = useState(null);
   const { user } = useAuth();
@@ -30,7 +30,6 @@ const ChatRoom = ({ room }) => {
     socket.on("stop_typing", () => setTypingUser(null));
 
     return () => {
-      socket.emit("leave_room", room._id);
       socket.off("receive_message");
       socket.off("typing");
       socket.off("stop_typing");
@@ -46,7 +45,11 @@ const ChatRoom = ({ room }) => {
       <div className="border-b p-3 font-medium"># {room.name}</div>
       <MessageList messages={messages} currentUsername={user?.username} />
       {typingUser && <p className="text-xs text-gray-400 px-4">{typingUser} is typing…</p>}
-      <MessageInput roomId={room._id} />
+      <MessageInput
+        roomId={room._id}
+        pendingLeaveRoomId={pendingLeaveRoomId}
+        onClearPendingLeaveRoom={onClearPendingLeaveRoom}
+      />
     </div>
   );
 };
