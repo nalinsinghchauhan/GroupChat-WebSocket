@@ -1,9 +1,10 @@
 services:
   - type: web
     name: websocket-chatroom-server
-    runtime: docker
+    runtime: node
     rootDir: server
-    dockerfilePath: Dockerfile
+    buildCommand: npm install
+    startCommand: node src/server.js
     envVars:
       - key: MONGO_URI
         sync: false
